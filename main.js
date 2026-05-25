@@ -1,6 +1,5 @@
 /**
  * main.js - Core 3D Engine Module
- * Manages scene, camera, renderer, and animation loop
  */
 
 import { Camera } from './core/Camera.js';
@@ -10,7 +9,6 @@ import { CursorOrbitControl } from './CursorOrbitControl.js';
 
 export class GraphicsEngine3D {
     constructor(containerId = 'canvas-container') {
-        // Create container if not exists
         let container = document.getElementById(containerId);
         if (!container) {
             container = document.createElement('div');
@@ -25,46 +23,23 @@ export class GraphicsEngine3D {
         }
         this.container = container;
         
-        // Create canvas
         const canvas = document.createElement('canvas');
         canvas.style.width = '100%';
         canvas.style.height = '100%';
         canvas.style.display = 'block';
         this.container.appendChild(canvas);
         
-        // Initialize core components
         this.renderer = new Renderer(canvas);
         this.camera = new Camera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.scene = { 
-            children: [],
-            background: '#050b1a'
-        };
+        this.scene = { children: [] };
         
-        // Setup orbit controls
         this.controls = new CursorOrbitControl(this.camera, canvas);
         this.controls.setTarget(0, 0, 0);
-        this.controls.setDistance(8);
         
-        // Track objects
         this.objects = [];
         this.animatedObjects = [];
         this.clock = 0;
         
-        // Setup lighting (for full WebGL implementation)
-        this.setupLighting();
-        
-        // Handle resize
-        window.addEventListener('resize', () => this.resize());
-        this.resize();
-        
-        // Start animation loop
-        this.animate();
-        
-        console.log('GraphicsEngine3D initialized');
-    }
-    
-    setupLighting() {
-        // Lighting data for shader-based renderer
         this.lights = {
             ambient: { r: 0.4, g: 0.4, b: 0.6 },
             directional: { 
@@ -73,6 +48,12 @@ export class GraphicsEngine3D {
                 intensity: 1.2
             }
         };
+        
+        window.addEventListener('resize', () => this.resize());
+        this.resize();
+        this.animate();
+        
+        console.log('GraphicsEngine3D initialized');
     }
     
     resize() {
@@ -94,6 +75,8 @@ export class GraphicsEngine3D {
             this.scene.children.splice(index, 1);
             const objIndex = this.objects.indexOf(mesh);
             if (objIndex !== -1) this.objects.splice(objIndex, 1);
+            const animIndex = this.animatedObjects.indexOf(mesh);
+            if (animIndex !== -1) this.animatedObjects.splice(animIndex, 1);
         }
     }
     
@@ -106,6 +89,7 @@ export class GraphicsEngine3D {
             bobHeight: options.bobHeight || 0.3,
             bobSpeed: options.bobSpeed || 1.5
         };
+        mesh.originalY = mesh.position.y;
         this.addMesh(mesh);
         this.animatedObjects.push(mesh);
     }
@@ -113,8 +97,7 @@ export class GraphicsEngine3D {
     animate() {
         requestAnimationFrame(() => this.animate());
         
-        // Update animations
-        this.clock += 0.016; // Approximate delta time
+        this.clock += 0.016;
         
         for (const obj of this.animatedObjects) {
             if (obj.userData.rotateY) {
@@ -130,22 +113,13 @@ export class GraphicsEngine3D {
             obj.updateMatrix();
         }
         
-        // Update camera view
         this.camera.updateViewMatrix();
-        
-        // Render scene
         this.renderer.render(this.scene, this.camera, this.lights);
     }
     
-    // Helper method to clear all objects
     clear() {
         this.scene.children = [];
         this.objects = [];
         this.animatedObjects = [];
-    }
-    
-    // Get object by name
-    getObjectByName(name) {
-        return this.objects.find(obj => obj.name === name);
     }
 }
